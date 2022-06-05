@@ -1,0 +1,320 @@
+import numpy as np
+
+class Vertice:
+  def __init__(self,rotulo,distancia_objetivo):
+    self.rotulo = rotulo
+    self.visitado = False
+    self.distancia_objetivo = distancia_objetivo
+    self.adjacentes = []
+
+  def adiciona_adjacente(self, adjacente):
+    self.adjacentes.append(adjacente)
+
+  def mostra_adjacentes(self):
+    for i in self.adjacentes:
+      print(i.vertice.rotulo, i.custo)
+
+class Adjacente:
+  def __init__(self, vertice, custo):
+    self.vertice = vertice
+    self.custo = custo
+    self.distancia_aestrela = vertice.distancia_objetivo + self.custo
+
+class Grafo:
+  saoPaulo = Vertice('São Paulo', 338)
+  sorocaba = Vertice('Sorocaba', 282)
+  miracatu = Vertice('Miracatu', 222)
+  capaoBonito = Vertice('Capão Bonito', 183)
+  registro = Vertice('Registro', 176)
+  apiai = Vertice('Apiaí', 110)
+  cajati = Vertice('Cajati', 140)
+  tunasDoParana = Vertice('Tunas do Paraná', 53)
+  curitiba = Vertice('Curitiba', 0)
+
+  saoPaulo.adiciona_adjacente(Adjacente(sorocaba, 102))
+  saoPaulo.adiciona_adjacente(Adjacente(miracatu, 137))
+
+  sorocaba.adiciona_adjacente(Adjacente(saoPaulo, 102))
+  sorocaba.adiciona_adjacente(Adjacente(capaoBonito, 128))
+
+  miracatu.adiciona_adjacente(Adjacente(saoPaulo, 137))
+  miracatu.adiciona_adjacente(Adjacente(registro, 50))
+
+  capaoBonito.adiciona_adjacente(Adjacente(sorocaba, 128))
+  capaoBonito.adiciona_adjacente(Adjacente(registro, 146))
+  capaoBonito.adiciona_adjacente(Adjacente(apiai, 96))
+
+  registro.adiciona_adjacente(Adjacente(miracatu, 50))
+  registro.adiciona_adjacente(Adjacente(capaoBonito, 146))
+  registro.adiciona_adjacente(Adjacente(cajati, 43))
+
+  apiai.adiciona_adjacente(Adjacente(capaoBonito, 96))
+  apiai.adiciona_adjacente(Adjacente(cajati, 122))
+  apiai.adiciona_adjacente(Adjacente(tunasDoParana, 90))
+
+  cajati.adiciona_adjacente(Adjacente(registro, 44))
+  cajati.adiciona_adjacente(Adjacente(apiai, 122))
+  cajati.adiciona_adjacente(Adjacente(curitiba, 176))
+
+  tunasDoParana.adiciona_adjacente(Adjacente(apiai, 90))
+  tunasDoParana.adiciona_adjacente(Adjacente(curitiba, 76))
+
+  curitiba.adiciona_adjacente(Adjacente(cajati, 176))
+  curitiba.adiciona_adjacente(Adjacente(tunasDoParana, 76))
+
+grafo = Grafo()
+
+class VetorOrdenado:
+  def __init__(self, capacidade):
+    self.capacidade = capacidade
+    self.ultima_posicao = -1
+    self.valores = np.empty(self.capacidade, dtype = object)
+
+  def insere(self, adjacente):
+    if self.ultima_posicao == self.capacidade - 1:
+      print('Capacidade máxima atingida')
+      return
+    posicao = 0
+    for i in range(self.ultima_posicao + 1):
+      posicao = i
+      if self.valores[i].distancia_aestrela > adjacente.distancia_aestrela:
+        break
+      if i == self.ultima_posicao:
+        posicao = i + 1
+    x = self.ultima_posicao
+    while x >= posicao:
+      self.valores[x+1] = self.valores[x]
+      x-=1
+    self.valores[posicao] = adjacente
+    self.ultima_posicao += 1
+
+  def imprime(self):
+    if self.ultima_posicao == -1:
+      print('O vetor está vazio')
+    else:
+      for i in range(self.ultima_posicao + 1):
+        print(i, ' - ', self.valores[i].vertice.rotulo, ': ',
+        self.valores[i].custo, ' - ',
+        self.valores[i].vertice.distancia_objetivo, ' - ',
+        self.valores[i].distancia_aestrela)
+
+  def atualizar(self):
+    for i in range(self.ultima_posicao + 1):
+      self.valores[i].distancia_aestrela = self.valores[i].custo + self.valores[i].vertice.distancia_objetivo
+          
+class AEstrela:
+  def __init__(self, objetivo):
+    self.objetivo = objetivo
+    self.encontrado = False
+
+  def buscar(self, atual):
+    print('------------------')                    
+    print('Atual: {}'.format(atual.rotulo))
+    atual.visitado = True
+
+    if atual == self.objetivo:
+      self.encontrado = True
+    else:
+      vetor_ordenado = VetorOrdenado(len(atual.adjacentes))
+      for adjacente in atual.adjacentes:
+        if adjacente.vertice.visitado == False:
+          adjacente.vertice.visitado = True
+          vetor_ordenado.insere(adjacente)
+      vetor_ordenado.imprime()
+
+      if vetor_ordenado.valores[0] != None:
+        self.buscar(vetor_ordenado.valores[0].vertice)
+              
+  def buscaAtualizacao(self, atual):
+    atual.visitado = True
+
+    if atual == self.objetivo:
+      self.encontrado = True
+    else:
+      vetor_ordenado = VetorOrdenado(len(atual.adjacentes))
+      for adjacente in atual.adjacentes:
+        if adjacente.vertice.visitado == False:
+          adjacente.vertice.visitado = True
+          vetor_ordenado.insere(adjacente)
+      vetor_ordenado.atualizar()
+
+      if vetor_ordenado.valores[0] != None:
+        self.buscaAtualizacao(vetor_ordenado.valores[0].vertice)
+
+def definirCidadeDestino(inicio):
+  inicio = inicio
+  print('1-São Paulo')
+  print('2-Sorocaba')
+  print('3-Miracatu')
+  print('4-Capão Bonito')
+  print('5-Registro')
+  print('6-Apiaí')
+  print('7-Cajati')
+  print('8-Tunas do Paraná')
+  print('9-Curitiba')
+  escolhaDestino = int(input('Escolha a cidade destino:'))
+  if escolhaDestino == 1:
+    reinicio = grafo.saoPaulo
+    destino = grafo.saoPaulo
+    grafo.saoPaulo.distancia_objetivo = 0
+    grafo.sorocaba.distancia_objetivo = 84
+    grafo.miracatu.distancia_objetivo = 117
+    grafo.capaoBonito.distancia_objetivo = 182
+    grafo.registro.distancia_objetivo = 162
+    grafo.apiai.distancia_objetivo = 249
+    grafo.cajati.distancia_objetivo = 199
+    grafo.tunasDoParana.distancia_objetivo = 295
+    grafo.curitiba.distancia_objetivo = 338
+  elif escolhaDestino == 2:
+    reinicio = grafo.sorocaba
+    destino = grafo.sorocaba
+    grafo.saoPaulo.distancia_objetivo = 84
+    grafo.sorocaba.distancia_objetivo = 0
+    grafo.miracatu.distancia_objetivo = 87
+    grafo.capaoBonito.distancia_objetivo = 107
+    grafo.registro.distancia_objetivo = 118
+    grafo.apiai.distancia_objetivo = 181
+    grafo.cajati.distancia_objetivo = 152
+    grafo.tunasDoParana.distancia_objetivo = 233
+    grafo.curitiba.distancia_objetivo = 282
+  elif escolhaDestino == 3:
+    reinicio = grafo.miracatu
+    destino = grafo.miracatu
+    grafo.saoPaulo.distancia_objetivo = 117
+    grafo.sorocaba.distancia_objetivo = 87
+    grafo.miracatu.distancia_objetivo = 0
+    grafo.capaoBonito.distancia_objetivo = 96
+    grafo.registro.distancia_objetivo = 46
+    grafo.apiai.distancia_objetivo = 143
+    grafo.cajati.distancia_objetivo = 82
+    grafo.tunasDoParana.distancia_objetivo = 181
+    grafo.curitiba.distancia_objetivo = 222
+  elif escolhaDestino == 4:
+    reinicio = grafo.capaoBonito
+    destino = grafo.capaoBonito
+    grafo.saoPaulo.distancia_objetivo = 182
+    grafo.sorocaba.distancia_objetivo = 107
+    grafo.miracatu.distancia_objetivo = 96
+    grafo.capaoBonito.distancia_objetivo = 0
+    grafo.registro.distancia_objetivo = 76
+    grafo.apiai.distancia_objetivo = 76
+    grafo.cajati.distancia_objetivo = 85
+    grafo.tunasDoParana.distancia_objetivo = 131
+    grafo.curitiba.distancia_objetivo = 183
+  elif escolhaDestino == 5:
+    reinicio = grafo.registro
+    destino = grafo.registro
+    grafo.saoPaulo.distancia_objetivo = 162
+    grafo.sorocaba.distancia_objetivo = 118
+    grafo.miracatu.distancia_objetivo = 46
+    grafo.capaoBonito.distancia_objetivo = 76
+    grafo.registro.distancia_objetivo = 0
+    grafo.apiai.distancia_objetivo = 101
+    grafo.cajati.distancia_objetivo = 37
+    grafo.tunasDoParana.distancia_objetivo = 136
+    grafo.curitiba.distancia_objetivo = 176
+  elif escolhaDestino == 6:
+    reinicio = grafo.apiai
+    destino = grafo.apiai
+    grafo.saoPaulo.distancia_objetivo = 249
+    grafo.sorocaba.distancia_objetivo = 181
+    grafo.miracatu.distancia_objetivo = 143
+    grafo.capaoBonito.distancia_objetivo = 76
+    grafo.registro.distancia_objetivo = 101
+    grafo.apiai.distancia_objetivo = 0
+    grafo.cajati.distancia_objetivo = 78
+    grafo.tunasDoParana.distancia_objetivo = 57
+    grafo.curitiba.distancia_objetivo = 110
+  elif escolhaDestino == 7:
+    reinicio = grafo.cajati
+    destino = grafo.cajati
+    grafo.saoPaulo.distancia_objetivo = 199
+    grafo.sorocaba.distancia_objetivo = 152
+    grafo.miracatu.distancia_objetivo = 82
+    grafo.capaoBonito.distancia_objetivo = 85
+    grafo.registro.distancia_objetivo = 37
+    grafo.apiai.distancia_objetivo = 78
+    grafo.cajati.distancia_objetivo = 0
+    grafo.tunasDoParana.distancia_objetivo = 102
+    grafo.curitiba.distancia_objetivo = 140
+  elif escolhaDestino == 8:
+    reinicio = grafo.tunasDoParana
+    destino = grafo.tunasDoParana
+    grafo.saoPaulo.distancia_objetivo = 295
+    grafo.sorocaba.distancia_objetivo = 233
+    grafo.miracatu.distancia_objetivo = 181
+    grafo.capaoBonito.distancia_objetivo = 131
+    grafo.registro.distancia_objetivo = 136
+    grafo.apiai.distancia_objetivo = 57
+    grafo.cajati.distancia_objetivo = 102
+    grafo.tunasDoParana.distancia_objetivo = 0
+    grafo.curitiba.distancia_objetivo = 53
+  elif escolhaDestino == 9:
+    reinicio = grafo.curitiba
+    destino = grafo.curitiba
+    grafo.saoPaulo.distancia_objetivo = 338
+    grafo.sorocaba.distancia_objetivo = 282
+    grafo.miracatu.distancia_objetivo = 222
+    grafo.capaoBonito.distancia_objetivo = 183
+    grafo.registro.distancia_objetivo = 176
+    grafo.apiai.distancia_objetivo = 110
+    grafo.cajati.distancia_objetivo = 140
+    grafo.tunasDoParana.distancia_objetivo = 53
+    grafo.curitiba.distancia_objetivo = 0
+  else:
+    print('Nenhuma cidade conhecida')
+  busca_aestrela = AEstrela(destino)
+  busca_aestrela.buscaAtualizacao(inicio)
+  limparRota()
+  busca_aestrela.buscar(inicio)
+  print('')
+  escolha = int(input('Chegou ao destino Final?(1-Sim/2-Não)'))
+  if escolha == 2:
+    limparRota()
+    definirCidadeDestino(reinicio)
+
+def definirCidadeInicial():
+  print('1-São Paulo')
+  print('2-Sorocaba')
+  print('3-Miracatu')
+  print('4-Capão Bonito')
+  print('5-Registro')
+  print('6-Apiaí')
+  print('7-Cajati')
+  print('8-Tunas do Paraná')
+  print('9-Curitiba')
+  escolhaDestino = int(input('Escolha a cidade Inicial:'))
+  if escolhaDestino == 1:
+    inicio = grafo.saoPaulo
+  elif escolhaDestino == 2:
+    inicio = grafo.sorocaba
+  elif escolhaDestino == 3:
+    inicio = grafo.miracatu
+  elif escolhaDestino == 4:
+    inicio = grafo.capaoBonito
+  elif escolhaDestino == 5:
+    inicio = grafo.registro
+  elif escolhaDestino == 6:
+    inicio = grafo.apiai
+  elif escolhaDestino == 7:
+    inicio = grafo.cajati
+  elif escolhaDestino == 8:
+    inicio = grafo.tunasDoParana
+  elif escolhaDestino == 9:
+    inicio = grafo.curitiba
+  else:
+    print('Nenhuma cidade conhecida')
+  definirCidadeDestino(inicio)
+
+def limparRota():
+  grafo.saoPaulo.visitado = False
+  grafo.sorocaba.visitado = False
+  grafo.miracatu.visitado = False
+  grafo.capaoBonito.visitado = False
+  grafo.registro.visitado = False
+  grafo.apiai.visitado = False
+  grafo.cajati.visitado = False
+  grafo.tunasDoParana.visitado = False
+  grafo.curitiba.visitado = False
+
+definirCidadeInicial()
